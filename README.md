@@ -11,6 +11,18 @@ This is the first emulator I've written and only has a few imperfections. There 
 - [ ] PPU Scrolling
 - [ ] APU
 
+## Building
+
+In case anyone who comes across this wants to build it themselves, the process is as follows from the root project directory.
+
+```
+mkdir build
+cd build
+cmake ..
+make
+./NESEmu
+```
+
 ## Helpful Resources
 - https://wiki.nesdev.org/
 - https://wiki.nesdev.org/w/index.php/Emulator_tests
