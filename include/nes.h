@@ -45,6 +45,7 @@ class NES {
         NES(const char* romFile);
         void run();
         uint8_t readMem(uint16_t addr);
+        void writeMem(uint16_t addr, uint8_t val);
     
     private:
         MOS6502* cpu;

@@ -60,6 +60,7 @@ class MOS6502 {
 
         uint8_t fetch();                                // Fetch data used by inst from mem or pc+1
         uint8_t readMem(uint16_t addr);                 // Read memory at addr
+        void writeMem(uint16_t addr, uint8_t val);                // Write memory at addr
         uint8_t getFlag(STATUSFLAGS flag);              // Read status flag bit
         uint8_t setFlag(STATUSFLAGS flag, bool val);    // Set status flag bit to val
 

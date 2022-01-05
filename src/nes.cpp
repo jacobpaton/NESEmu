@@ -56,6 +56,9 @@ void NES::run() {
 }
 
 uint8_t NES::readMem(uint16_t addr) {
+    return 0x0u;
+}
 
+void NES::writeMem(uint16_t addr, uint8_t val) {
     return 0x0u;
 }

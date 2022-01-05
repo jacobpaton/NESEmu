@@ -55,6 +55,10 @@ uint8_t MOS6502::readMem(uint16_t addr) {
     return nes->readMem(addr);
 }
 
+void MOS6502::writeMem(uint16_t addr, uint8_t val) {
+    return nes->writeMem(addr, val);
+}
+
 uint8_t MOS6502::getFlag(STATUSFLAGS flag) {
     return (uint8_t)(registers["P"] & flag);
 }
@@ -104,42 +108,61 @@ uint8_t MOS6502::AND() {
     return pageBoundaryCrossed ? 1u : 0u;
 }
 
-uint8_t MOS6502::ASL() {return 0x0;}	
+uint8_t MOS6502::ASL() {
+    // Fetch neccessary data
+    fetch();
+
+    // Compute shift
+    uint16_t shifted = ((uint16_t) fetched) << 1;
+
+    // Set flags
+    setFlag(C, (shifted & 0xFF00) > 0);
+    setFlag(Z, (shifted & 0x00ff) == 0x00);
+    setFlag(N, shift & 0x80);
+
+    if (oplist[opcode].addrmode == &MOS6052::IMP)
+        registers["A"] = shifted & 0x00FF;
+    else
+        writeMem(addr_abs, shifted & 0x00FF);
+
+    return 0u;
+}
+
 uint8_t MOS6502::BCC() {return 0x0;}
-uint8_t MOS6502::BCS() {return 0x0;}	
-uint8_t MOS6502::BEQ() {return 0x0;}	
-uint8_t MOS6502::BIT() {return 0x0;}	
+uint8_t MOS6502::BCS() {return 0x0;}
+uint8_t MOS6502::BEQ() {return 0x0;}
+uint8_t MOS6502::BIT() {return 0x0;}
 uint8_t MOS6502::BMI() {return 0x0;}
-uint8_t MOS6502::BNE() {return 0x0;}	
-uint8_t MOS6502::BPL() {return 0x0;}	
-uint8_t MOS6502::BRK() {return 0x0;}	
+uint8_t MOS6502::BNE() {return 0x0;}
+uint8_t MOS6502::BPL() {return 0x0;}
+uint8_t MOS6502::BRK() {return 0x0;}
 uint8_t MOS6502::BVC() {return 0x0;}
-uint8_t MOS6502::BVS() {return 0x0;}	
-uint8_t MOS6502::CLC() {return 0x0;}	
-uint8_t MOS6502::CLD() {return 0x0;}	
+uint8_t MOS6502::BVS() {return 0x0;}
+uint8_t MOS6502::CLC() {return 0x0;}
+uint8_t MOS6502::CLD() {return 0x0;}
 uint8_t MOS6502::CLI() {return 0x0;}
-uint8_t MOS6502::CLV() {return 0x0;}	
-uint8_t MOS6502::CMP() {return 0x0;}	
-uint8_t MOS6502::CPX() {return 0x0;}	
+uint8_t MOS6502::CLV() {return 0x0;}
+uint8_t MOS6502::CMP() {return 0x0;}
+uint8_t MOS6502::CPX() {return 0x0;}
 uint8_t MOS6502::CPY() {return 0x0;}
-uint8_t MOS6502::DEC() {return 0x0;}	
-uint8_t MOS6502::DEX() {return 0x0;}	
-uint8_t MOS6502::DEY() {return 0x0;}	
+uint8_t MOS6502::DEC() {return 0x0;}
+uint8_t MOS6502::DEX() {return 0x0;}
+uint8_t MOS6502::DEY() {return 0x0;}
 uint8_t MOS6502::EOR() {return 0x0;}
-uint8_t MOS6502::INC() {return 0x0;}	
-uint8_t MOS6502::INX() {return 0x0;}	
-uint8_t MOS6502::INY() {return 0x0;}	
+uint8_t MOS6502::INC() {return 0x0;}
+uint8_t MOS6502::INX() {return 0x0;}
+uint8_t MOS6502::INY() {return 0x0;}
 uint8_t MOS6502::JMP() {return 0x0;}
-uint8_t MOS6502::JSR() {return 0x0;}	
-uint8_t MOS6502::LDA() {return 0x0;}	
-uint8_t MOS6502::LDX() {return 0x0;}	
+uint8_t MOS6502::JSR() {return 0x0;}
+uint8_t MOS6502::LDA() {return 0x0;}
+uint8_t MOS6502::LDX() {return 0x0;}
 uint8_t MOS6502::LDY() {return 0x0;}
-uint8_t MOS6502::LSR() {return 0x0;}	
-uint8_t MOS6502::NOP() {return 0x0;}	
-uint8_t MOS6502::ORA() {return 0x0;}	
+uint8_t MOS6502::LSR() {return 0x0;}
+uint8_t MOS6502::NOP() {return 0x0;}
+uint8_t MOS6502::ORA() {return 0x0;}
 uint8_t MOS6502::PHA() {return 0x0;}
-uint8_t MOS6502::PHP() {return 0x0;}	
-uint8_t MOS6502::PLA() {return 0x0;}	
+uint8_t MOS6502::PHP() {return 0x0;}
+uint8_t MOS6502::PLA() {return 0x0;}
 uint8_t MOS6502::PLP() {return 0x0;}	
 uint8_t MOS6502::ROL() {return 0x0;}
 uint8_t MOS6502::ROR() {return 0x0;}	
