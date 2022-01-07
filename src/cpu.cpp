@@ -138,10 +138,30 @@ uint8_t MOS6502::BPL() {return 0x0;}
 uint8_t MOS6502::BRK() {return 0x0;}
 uint8_t MOS6502::BVC() {return 0x0;}
 uint8_t MOS6502::BVS() {return 0x0;}
-uint8_t MOS6502::CLC() {return 0x0;}
-uint8_t MOS6502::CLD() {return 0x0;}
-uint8_t MOS6502::CLI() {return 0x0;}
-uint8_t MOS6502::CLV() {return 0x0;}
+
+uint8_t MOS6502::CLC() {
+    setFlag(C, 0);
+
+    return 0u;
+}
+
+uint8_t MOS6502::CLD() {
+    setFlag(D, 0);
+
+    return 0u;
+}
+
+uint8_t MOS6502::CLI() {
+    setFlag(I, 0);
+
+    return 0u;
+}
+
+uint8_t MOS6502::CLV() {
+    setFlag(O, 0);
+
+    return 0u;
+}
 uint8_t MOS6502::CMP() {return 0x0;}
 uint8_t MOS6502::CPX() {return 0x0;}
 uint8_t MOS6502::CPY() {return 0x0;}
@@ -199,9 +219,25 @@ uint8_t MOS6502::ROR() {return 0x0;}
 uint8_t MOS6502::RTI() {return 0x0;}	
 uint8_t MOS6502::RTS() {return 0x0;}	
 uint8_t MOS6502::SBC() {return 0x0;}
-uint8_t MOS6502::SEC() {return 0x0;}	
-uint8_t MOS6502::SED() {return 0x0;}	
-uint8_t MOS6502::SEI() {return 0x0;}	
+
+uint8_t MOS6502::SEC() {
+    setFlag(C, 1);
+
+    return 0u;
+}
+
+uint8_t MOS6502::SED() {
+    setFlag(D, 1);
+
+    return 0u;
+}
+
+uint8_t MOS6502::SEI() {
+    setFlag(I, 1);
+
+    return 0u;
+}
+
 uint8_t MOS6502::STA() {return 0x0;}
 uint8_t MOS6502::STX() {return 0x0;}	
 uint8_t MOS6502::STY() {return 0x0;}	
