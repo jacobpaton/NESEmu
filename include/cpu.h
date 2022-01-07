@@ -62,15 +62,15 @@ class MOS6502 {
         uint8_t readMem(uint16_t addr);                 // Read memory at addr
         void writeMem(uint16_t addr, uint8_t val);                // Write memory at addr
         uint8_t getFlag(STATUSFLAGS flag);              // Read status flag bit
-        uint8_t setFlag(STATUSFLAGS flag, bool val);    // Set status flag bit to val
+        void setFlag(STATUSFLAGS flag, bool val);       // Set status flag bit to val
 
         // Instruction struct to hold instruction name, function, address mode, and cycles
         struct INSTRUCTION
     	{
 	    	std::string name;                           // Human readable instruction name
-		    uint8_t     (MOS6502::*execute)();          // Function pointer to execute the instruction
-		    uint8_t     (MOS6502::*addrmode)();         // Address mode of the instruction
-		    uint8_t     cycles;                         // Number of cycles to complete base instruction
+		    uint8_t (MOS6502::*execute)();              // Function pointer to execute the instruction
+		    uint8_t (MOS6502::*addrmode)();             // Address mode of the instruction
+		    uint8_t cycles;                             // Number of cycles to complete base instruction
 	    };
 
         // Instruction function declarations

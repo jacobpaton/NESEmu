@@ -26,8 +26,8 @@ void MOS6502::cycle() {
         cyclesRemaining = oplist[opcode].cycles;
         // Calculate number of additional required cycles for addressing mode and opcode
         pageBoundaryCrossed = false;
-        cyclesRemaining += (*(oplist[opcode].addrmode))();
-        cyclesRemaining += (*(oplist[opcode].execute))();
+        cyclesRemaining += (this->*oplist[opcode].addrmode)();
+        cyclesRemaining += (this->*oplist[opcode].execute)();
     }
 
     cyclesRemaining--;
@@ -45,7 +45,7 @@ void MOS6502::nmi() {
     // TODO: Handle non-maskable interrupts
 }
 
-uint8_t fetch() {
+uint8_t MOS6502::fetch() {
     if (!(oplist[opcode].addrmode == &MOS6502::IMP))
         fetched = readMem(addr_abs);
     return fetched;
@@ -56,14 +56,14 @@ uint8_t MOS6502::readMem(uint16_t addr) {
 }
 
 void MOS6502::writeMem(uint16_t addr, uint8_t val) {
-    return nes->writeMem(addr, val);
+    nes->writeMem(addr, val);
 }
 
 uint8_t MOS6502::getFlag(STATUSFLAGS flag) {
     return (uint8_t)(registers["P"] & flag);
 }
 
-uint8_t MOS6502::setFlag(STATUSFLAGS flag, bool val) {
+void MOS6502::setFlag(STATUSFLAGS flag, bool val) {
     if (val)
         registers["P"] |= flag;
     else
@@ -101,8 +101,8 @@ uint8_t MOS6502::AND() {
     registers["A"] &= fetched;
 
     // Set flags
-    setFlag(Z, (sum & 0x00FF) == 0);   // set zero bit if sum = 0
-    setFlag(N, sum & 0x80);            // negative bit is set to most significant bit
+    setFlag(Z, (registers["A"] & 0x00FF) == 0);   // set zero bit if res = 0
+    setFlag(N, registers["A"] & 0x80);            // negative bit is set to most significant bit
 
     // Can take an additional cycle
     return pageBoundaryCrossed ? 1u : 0u;
@@ -118,9 +118,9 @@ uint8_t MOS6502::ASL() {
     // Set flags
     setFlag(C, (shifted & 0xFF00) > 0);
     setFlag(Z, (shifted & 0x00ff) == 0x00);
-    setFlag(N, shift & 0x80);
+    setFlag(N, shifted & 0x80);
 
-    if (oplist[opcode].addrmode == &MOS6052::IMP)
+    if (oplist[opcode].addrmode == &MOS6502::IMP)
         registers["A"] = shifted & 0x00FF;
     else
         writeMem(addr_abs, shifted & 0x00FF);
@@ -148,7 +148,22 @@ uint8_t MOS6502::CPY() {return 0x0;}
 uint8_t MOS6502::DEC() {return 0x0;}
 uint8_t MOS6502::DEX() {return 0x0;}
 uint8_t MOS6502::DEY() {return 0x0;}
-uint8_t MOS6502::EOR() {return 0x0;}
+
+uint8_t MOS6502::EOR() {
+    // Fetch neccessary data
+    fetch();
+
+    // Compute bitwise and
+    registers["A"] ^= fetched;
+
+    // Set flags
+    setFlag(Z, (registers["A"] & 0x00FF) == 0);   // set zero bit if res = 0
+    setFlag(N, registers["A"] & 0x80);            // negative bit is set to most significant bit
+
+    // Can take an additional cycle
+    return pageBoundaryCrossed ? 1u : 0u;
+}
+
 uint8_t MOS6502::INC() {return 0x0;}
 uint8_t MOS6502::INX() {return 0x0;}
 uint8_t MOS6502::INY() {return 0x0;}
@@ -159,7 +174,22 @@ uint8_t MOS6502::LDX() {return 0x0;}
 uint8_t MOS6502::LDY() {return 0x0;}
 uint8_t MOS6502::LSR() {return 0x0;}
 uint8_t MOS6502::NOP() {return 0x0;}
-uint8_t MOS6502::ORA() {return 0x0;}
+
+uint8_t MOS6502::ORA() {
+    // Fetch neccessary data
+    fetch();
+
+    // Compute bitwise and
+    registers["A"] |= fetched;
+
+    // Set flags
+    setFlag(Z, (registers["A"] & 0x00FF) == 0);   // set zero bit if res = 0
+    setFlag(N, registers["A"] & 0x80);            // negative bit is set to most significant bit
+
+    // Can take an additional cycle
+    return pageBoundaryCrossed ? 1u : 0u;
+}
+
 uint8_t MOS6502::PHA() {return 0x0;}
 uint8_t MOS6502::PHP() {return 0x0;}
 uint8_t MOS6502::PLA() {return 0x0;}
