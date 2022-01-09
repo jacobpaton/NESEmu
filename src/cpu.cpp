@@ -192,7 +192,19 @@ uint8_t MOS6502::CPY() {
     return 0u;
 }
 
-uint8_t MOS6502::DEC() {return 0x0;}
+uint8_t MOS6502::DEC() {
+    // Read from mem, decrement, and write back to mem
+    uint8_t res = readMem(addr_abs);
+    res--;
+    writeMem(addr_abs, res);
+
+    // Set flags
+    setFlag(Z, (registers["A"] & 0x00FF) == 0);   // set zero bit if res = 0
+    setFlag(N, registers["A"] & 0x80);            // negative bit is set to most significant bit
+
+    return 0u;
+}
+
 uint8_t MOS6502::DEX() {
     // Decrement X
     registers["X"]--;
@@ -230,7 +242,18 @@ uint8_t MOS6502::EOR() {
     return pageBoundaryCrossed ? 1u : 0u;
 }
 
-uint8_t MOS6502::INC() {return 0x0;}
+uint8_t MOS6502::INC() {
+    // Read from mem, increment, and write back to mem
+    uint8_t res = readMem(addr_abs);
+    res++;
+    writeMem(addr_abs, res);
+
+    // Set flags
+    setFlag(Z, (registers["A"] & 0x00FF) == 0);   // set zero bit if res = 0
+    setFlag(N, registers["A"] & 0x80);            // negative bit is set to most significant bit
+
+    return 0u;
+}
 
 uint8_t MOS6502::INX() {
     // Increment X
@@ -371,15 +394,72 @@ uint8_t MOS6502::STY() {
     return 0u;
 }
 
-uint8_t MOS6502::TAX() {return 0x0;}	
-uint8_t MOS6502::TAY() {return 0x0;}
-uint8_t MOS6502::TSX() {return 0x0;}	
-uint8_t MOS6502::TXA() {return 0x0;}	
-uint8_t MOS6502::TXS() {return 0x0;}	
-uint8_t MOS6502::TYA() {return 0x0;}
+uint8_t MOS6502::TAX() {
+    // Copy A to X
+    registers["X"] = registers["A"];
 
-// Catch all for illegal opcodes which have not been implemented
-uint8_t MOS6502::ILL() {return 0x0;}
+    // Set flags
+    setFlag(Z, (registers["X"] & 0x00FF) == 0);   // set zero bit if res = 0
+    setFlag(N, registers["X"] & 0x80);            // negative bit is set to most significant bit
+
+    return 0u;
+}
+
+uint8_t MOS6502::TAY() {
+    // Copy A to Y
+    registers["Y"] = registers["A"];
+
+    // Set flags
+    setFlag(Z, (registers["Y"] & 0x00FF) == 0);   // set zero bit if res = 0
+    setFlag(N, registers["Y"] & 0x80);            // negative bit is set to most significant bit
+
+    return 0u;
+}
+
+uint8_t MOS6502::TSX() {
+    // Copy A to X
+    registers["X"] = registers["SP"];
+
+    // Set flags
+    setFlag(Z, (registers["X"] & 0x00FF) == 0);   // set zero bit if res = 0
+    setFlag(N, registers["X"] & 0x80);            // negative bit is set to most significant bit
+
+    return 0u;
+}
+
+uint8_t MOS6502::TXA() {
+    // Copy X to A
+    registers["A"] = registers["X"];
+
+    // Set flags
+    setFlag(Z, (registers["A"] & 0x00FF) == 0);   // set zero bit if res = 0
+    setFlag(N, registers["A"] & 0x80);            // negative bit is set to most significant bit
+
+    return 0u;
+}
+
+uint8_t MOS6502::TXS() {
+    // Copy A to X
+    registers["SP"] = registers["X"];
+
+    return 0u;
+}
+
+uint8_t MOS6502::TYA() {
+    // Copy Y to A
+    registers["A"] = registers["Y"];
+
+    // Set flags
+    setFlag(Z, (registers["A"] & 0x00FF) == 0);   // set zero bit if res = 0
+    setFlag(N, registers["A"] & 0x80);            // negative bit is set to most significant bit
+
+    return 0u;
+}
+
+// Catch all for illegal opcodes
+uint8_t MOS6502::ILL() {
+    return 0u;
+}
 
 // Addressing modes
 uint8_t MOS6502::IMP() {return 0x0;}	
