@@ -46,6 +46,8 @@ void MOS6502::nmi() {
 }
 
 uint8_t MOS6502::fetch() {
+    // Read from memory at the absolute address unless in implicit addr mode
+    // in which case we return the data directly from the byte at pc
     if (!(oplist[opcode].addrmode == &MOS6502::IMP))
         fetched = readMem(addr_abs);
     return fetched;
@@ -189,11 +191,56 @@ uint8_t MOS6502::INX() {return 0x0;}
 uint8_t MOS6502::INY() {return 0x0;}
 uint8_t MOS6502::JMP() {return 0x0;}
 uint8_t MOS6502::JSR() {return 0x0;}
-uint8_t MOS6502::LDA() {return 0x0;}
-uint8_t MOS6502::LDX() {return 0x0;}
-uint8_t MOS6502::LDY() {return 0x0;}
+
+uint8_t MOS6502::LDA() {
+    // Fetch neccessary data
+    fetch();
+
+    // Write fetched data to accumulator
+    registers["A"] = fetched;
+
+    // Set flags
+    setFlag(Z, (registers["A"] & 0x00FF) == 0);   // set zero bit if res = 0
+    setFlag(N, registers["A"] & 0x80);            // negative bit is set to most significant bit
+
+    // Can take an additional cycle
+    return pageBoundaryCrossed ? 1u : 0u;
+}
+
+uint8_t MOS6502::LDX() { 
+    // Fetch neccessary data
+    fetch();
+
+    // Write fetched data to X register
+    registers["X"] = fetched;
+
+    // Set flags
+    setFlag(Z, (registers["X"] & 0x00FF) == 0);   // set zero bit if res = 0
+    setFlag(N, registers["X"] & 0x80);            // negative bit is set to most significant bit
+
+    // Can take an additional cycle
+    return pageBoundaryCrossed ? 1u : 0u;
+}
+
+uint8_t MOS6502::LDY() {
+    // Fetch neccessary data
+    fetch();
+
+    // Write fetched data to X register
+    registers["Y"] = fetched;
+
+    // Set flags
+    setFlag(Z, (registers["Y"] & 0x00FF) == 0);   // set zero bit if res = 0
+    setFlag(N, registers["Y"] & 0x80);            // negative bit is set to most significant bit
+
+    // Can take an additional cycle
+    return pageBoundaryCrossed ? 1u : 0u;
+}
 uint8_t MOS6502::LSR() {return 0x0;}
-uint8_t MOS6502::NOP() {return 0x0;}
+
+uint8_t MOS6502::NOP() {
+    return 0u;
+}
 
 uint8_t MOS6502::ORA() {
     // Fetch neccessary data
@@ -238,9 +285,27 @@ uint8_t MOS6502::SEI() {
     return 0u;
 }
 
-uint8_t MOS6502::STA() {return 0x0;}
-uint8_t MOS6502::STX() {return 0x0;}	
-uint8_t MOS6502::STY() {return 0x0;}	
+uint8_t MOS6502::STA() {
+    // Write A register contents to given address
+    writeMem(addr_abs, registers["A"]);
+
+    return 0u;
+}
+
+uint8_t MOS6502::STX() {
+    // Write X register contents to given address
+    writeMem(addr_abs, registers["X"]);
+
+    return 0u;
+}
+
+uint8_t MOS6502::STY() {
+    // Write Y register contents to given address
+    writeMem(addr_abs, registers["Y"]);
+
+    return 0u;
+}
+
 uint8_t MOS6502::TAX() {return 0x0;}	
 uint8_t MOS6502::TAY() {return 0x0;}
 uint8_t MOS6502::TSX() {return 0x0;}	
