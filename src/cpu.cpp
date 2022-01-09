@@ -165,11 +165,55 @@ uint8_t MOS6502::CLV() {
     return 0u;
 }
 uint8_t MOS6502::CMP() {return 0x0;}
-uint8_t MOS6502::CPX() {return 0x0;}
-uint8_t MOS6502::CPY() {return 0x0;}
+
+uint8_t MOS6502::CPX() {
+    // Fetch neccessary data
+    fetch();
+
+    // Perform subtraction and set flags
+    uint16_t res = (uint16_t) registers["X"] - (uint16_t) fetched;
+    setFlag(Z, (res & 0x00FF) == 0);        // set zero bit if res = 0
+    setFlag(N, res & 0x80);                 // negative bit is set to most significant bit
+    setFlag(C, registers["X"] >= fetched);  // set carry if x is bigger than the data from memory
+
+    return 0u;
+}
+
+uint8_t MOS6502::CPY() {
+    // Fetch neccessary data
+    fetch();
+
+    // Perform subtraction and set flags
+    uint16_t res = (uint16_t) registers["Y"] - (uint16_t) fetched;
+    setFlag(Z, (res & 0x00FF) == 0);        // set zero bit if res = 0
+    setFlag(N, res & 0x80);                 // negative bit is set to most significant bit
+    setFlag(C, registers["Y" ] >= fetched); // set carry if y is bigger than the data from memory
+
+    return 0u;
+}
+
 uint8_t MOS6502::DEC() {return 0x0;}
-uint8_t MOS6502::DEX() {return 0x0;}
-uint8_t MOS6502::DEY() {return 0x0;}
+uint8_t MOS6502::DEX() {
+    // Decrement X
+    registers["X"]--;
+
+    // Set flags
+    setFlag(Z, (registers["X"] & 0x00FF) == 0);   // set zero bit if res = 0
+    setFlag(N, registers["X"] & 0x80);            // negative bit is set to most significant bit
+
+    return 0u;
+}
+
+uint8_t MOS6502::DEY() {
+    // Decrement Y
+    registers["Y"]--;
+
+    // Set flags
+    setFlag(Z, (registers["Y"] & 0x00FF) == 0);   // set zero bit if res = 0
+    setFlag(N, registers["Y"] & 0x80);            // negative bit is set to most significant bit
+
+    return 0u;
+}
 
 uint8_t MOS6502::EOR() {
     // Fetch neccessary data
@@ -187,8 +231,29 @@ uint8_t MOS6502::EOR() {
 }
 
 uint8_t MOS6502::INC() {return 0x0;}
-uint8_t MOS6502::INX() {return 0x0;}
-uint8_t MOS6502::INY() {return 0x0;}
+
+uint8_t MOS6502::INX() {
+    // Increment X
+    registers["X"]++;
+
+    // Set flags
+    setFlag(Z, (registers["X"] & 0x00FF) == 0);   // set zero bit if res = 0
+    setFlag(N, registers["X"] & 0x80);            // negative bit is set to most significant bit
+
+    return 0u;
+}
+
+uint8_t MOS6502::INY() {
+    // Increment Y
+    registers["Y"]++;
+
+    // Set flags
+    setFlag(Z, (registers["Y"] & 0x00FF) == 0);   // set zero bit if res = 0
+    setFlag(N, registers["Y"] & 0x80);            // negative bit is set to most significant bit
+
+    return 0u;
+}
+
 uint8_t MOS6502::JMP() {return 0x0;}
 uint8_t MOS6502::JSR() {return 0x0;}
 
