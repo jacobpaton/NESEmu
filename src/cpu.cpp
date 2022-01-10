@@ -340,6 +340,7 @@ uint8_t MOS6502::LDY() {
     // Can take an additional cycle
     return pageBoundaryCrossed ? 1u : 0u;
 }
+
 uint8_t MOS6502::LSR() {
     // Fetch neccessary data
     if (oplist[opcode].addrmode == &MOS6502::IMP){
@@ -386,10 +387,38 @@ uint8_t MOS6502::ORA() {
     return pageBoundaryCrossed ? 1u : 0u;
 }
 
-uint8_t MOS6502::PHA() {return 0x0;}
-uint8_t MOS6502::PHP() {return 0x0;}
-uint8_t MOS6502::PLA() {return 0x0;}
-uint8_t MOS6502::PLP() {return 0x0;}
+uint8_t MOS6502::PHA() {
+    writeMem(0x0100 + registers["SP"], registers["A"]);
+    registers["SP"]--;
+
+    return 0u;
+}
+
+uint8_t MOS6502::PHP() {
+    writeMem(0x0100 + registers["SP"], registers["P"] | B | U);
+    setFlag(B, 0);
+    setFlag(U, 0);
+    registers["SP"]--;
+
+    return 0u;
+}
+
+uint8_t MOS6502::PLA() {
+    registers["SP"]++;
+    readMem(0x0100 + registers["SP"]);
+    setFlag(Z, registers["A"] ? 0u : 1u);
+    setFlag(N, registers["A"] & 0x80);
+
+    return 0u;
+}
+
+uint8_t MOS6502::PLP() {
+    registers["SP"]++;
+    registers["P"] = readMem(0x0100 + registers["SP"]);
+    setFlag(U, 1);
+
+    return 0u;
+}
 
 uint8_t MOS6502::ROL() {
     if (oplist[opcode].addrmode == &MOS6502::IMP) {
@@ -453,9 +482,25 @@ uint8_t MOS6502::ROR() {
     return 0u;
 }
 
-uint8_t MOS6502::RTI() {return 0x0;}	
-uint8_t MOS6502::RTS() {return 0x0;}	
-uint8_t MOS6502::SBC() {return 0x0;}
+uint8_t MOS6502::RTI() {return 0x0;}
+uint8_t MOS6502::RTS() {return 0x0;}
+
+uint8_t MOS6502::SBC() {
+    // Fetch neccessary data
+    fetch();
+
+    // 2s complement subtraction
+    uint16_t complement = ((uint16_t) fetched) ^ 0x00FF;
+    uint16_t res = (uint16_t) registers["A"] + complement + (uint16_t) getFlag(C);
+    setFlag(C, res & 0xFF00);
+    setFlag(Z ((res & 0x00FF) == 0));
+    setFlag(O, (res ^ (uint16_t) registers["A"]) & (res ^ complement) & 0x0080);
+    setFlag(N, res & 0x0080);
+    registers["A"] = res & 0x00FF;
+
+    // Can take an additional cycle
+    return pageBoundaryCrossed ? 1u : 0u;
+}
 
 uint8_t MOS6502::SEC() {
     setFlag(C, 1);
@@ -555,11 +600,6 @@ uint8_t MOS6502::TYA() {
     setFlag(Z, (registers["A"] & 0x00FF) == 0);   // set zero bit if res = 0
     setFlag(N, registers["A"] & 0x80);            // negative bit is set to most significant bit
 
-    return 0u;
-}
-
-// Catch all for illegal opcodes
-uint8_t MOS6502::ILL() {
     return 0u;
 }
 
