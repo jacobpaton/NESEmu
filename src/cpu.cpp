@@ -112,7 +112,11 @@ uint8_t MOS6502::AND() {
 
 uint8_t MOS6502::ASL() {
     // Fetch neccessary data
-    fetch();
+    if (oplist[opcode].addrmode == &MOS6502::IMP){
+        fetched = registers["A"];
+    } else {
+        fetch();
+    }
 
     // Compute shift
     uint16_t shifted = ((uint16_t) fetched) << 1;
@@ -122,11 +126,12 @@ uint8_t MOS6502::ASL() {
     setFlag(Z, (shifted & 0x00ff) == 0x00);
     setFlag(N, shifted & 0x80);
 
-    if (oplist[opcode].addrmode == &MOS6502::IMP)
+    if (oplist[opcode].addrmode == &MOS6502::IMP) {
         registers["A"] = shifted & 0x00FF;
-    else
+    } else {
         writeMem(addr_abs, shifted & 0x00FF);
-
+    }
+    
     return 0u;
 }
 
@@ -164,7 +169,18 @@ uint8_t MOS6502::CLV() {
 
     return 0u;
 }
-uint8_t MOS6502::CMP() {return 0x0;}
+uint8_t MOS6502::CMP() {
+    // Fetch neccessary data
+    fetch();
+
+    uint16_t res = registers["A"] - fetched;
+    setFlag(Z, (res & 0x00FF) == 0);        // set zero bit if res = 0
+    setFlag(N, res & 0x80);                 // negative bit is set to most significant bit
+    setFlag(C, registers["A"] >= fetched);  // set carry if accumulator is bigger than the data from memory
+
+    // Can take an additional cycle
+    return pageBoundaryCrossed ? 1u : 0u;
+}
 
 uint8_t MOS6502::CPX() {
     // Fetch neccessary data
@@ -324,7 +340,32 @@ uint8_t MOS6502::LDY() {
     // Can take an additional cycle
     return pageBoundaryCrossed ? 1u : 0u;
 }
-uint8_t MOS6502::LSR() {return 0x0;}
+uint8_t MOS6502::LSR() {
+    // Fetch neccessary data
+    if (oplist[opcode].addrmode == &MOS6502::IMP){
+        fetched = registers["A"];
+    } else {
+        fetch();
+    }
+
+    // Set carry to bit shifted out
+    setFlag(C, fetched & 0x01);
+
+    // Compute shift
+    uint16_t shifted = ((uint16_t) fetched) >> 1;
+
+    // Set flags
+    setFlag(Z, (shifted & 0x00ff) == 0x00);
+    setFlag(N, shifted & 0x80);
+
+    if (oplist[opcode].addrmode == &MOS6502::IMP) {
+        registers["A"] = shifted & 0x00FF;
+    } else {
+        writeMem(addr_abs, shifted & 0x00FF);
+    }
+
+    return 0u;
+}
 
 uint8_t MOS6502::NOP() {
     return 0u;
@@ -348,9 +389,70 @@ uint8_t MOS6502::ORA() {
 uint8_t MOS6502::PHA() {return 0x0;}
 uint8_t MOS6502::PHP() {return 0x0;}
 uint8_t MOS6502::PLA() {return 0x0;}
-uint8_t MOS6502::PLP() {return 0x0;}	
-uint8_t MOS6502::ROL() {return 0x0;}
-uint8_t MOS6502::ROR() {return 0x0;}	
+uint8_t MOS6502::PLP() {return 0x0;}
+
+uint8_t MOS6502::ROL() {
+    if (oplist[opcode].addrmode == &MOS6502::IMP) {
+        fetched = registers["A"];
+    } else {
+        fetch();
+    }
+
+    uint8_t prevCarry = getFlag(C);
+
+    // Store MSB of fetched in carry
+    setFlag(C, (fetched & 0x80) == 0x80);
+    
+    fetched <<= 1u;
+
+    // Store old carry at LSB
+    if (prevCarry) {
+        fetched |= 0x1u;
+    }
+
+    setFlag(Z, fetched ? 0u : 1u);
+    setFlag(N, fetched & 0x80);            // negative bit is set to most significant bit
+
+    if (oplist[opcode].addrmode == &MOS6502::IMP) {
+        registers["A"] = fetched;
+    } else {
+        writeMem(addr_abs, fetched);
+    }
+
+    return 0u;
+}
+
+uint8_t MOS6502::ROR() {
+    if (oplist[opcode].addrmode == &MOS6502::IMP) {
+        fetched = registers["A"];
+    } else {
+        fetch();
+    }
+
+    uint8_t prevCarry = getFlag(C);
+
+    // Store MSB of fetched in carry
+    setFlag(C, (fetched & 0x01) == 0x01);
+    
+    fetched >>= 1u;
+
+    // Store old carry at LSB
+    if (prevCarry) {
+        fetched |= 0x80u;
+    }
+
+    setFlag(Z, fetched ? 0u : 1u);
+    setFlag(N, fetched & 0x80);            // negative bit is set to most significant bit
+
+    if (oplist[opcode].addrmode == &MOS6502::IMP) {
+        registers["A"] = fetched;
+    } else {
+        writeMem(addr_abs, fetched);
+    }
+
+    return 0u;
+}
+
 uint8_t MOS6502::RTI() {return 0x0;}	
 uint8_t MOS6502::RTS() {return 0x0;}	
 uint8_t MOS6502::SBC() {return 0x0;}
