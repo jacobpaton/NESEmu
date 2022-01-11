@@ -34,15 +34,76 @@ void MOS6502::cycle() {
 }
 
 void MOS6502::reset() {
-    // TODO: Reset CPU state
+    // Get address to set program counter to
+	addr_abs = 0xFFFC;
+	uint16_t lo = read(addr_abs + 0);
+	uint16_t hi = read(addr_abs + 1);
+    pc = (hi << 8) | lo;
+
+    // Reset registers
+    registers["A"] = 0u;
+    registers["X"] = 0u;
+    registers["Y"] = 0u;
+    registers["SP"] = 0xFD;
+    registers["P"] = 0x00 | U;
+
+    // Clear helper variables
+    addr_rel = 0u;
+    addr_abs = 0u;
+    fetched = 0u;
+
+    // Reset takes 8 cycles ()
+    cyclesRemaining = 8;
 }
 
 void MOS6502::irq() {
-    // TODO: Handle interrupts
+    // If interrupts are allowed
+	if (GetFlag(I) == 0)
+	{
+		// Push the program counter to the stack. It's 16-bits dont
+		// forget so that takes two pushes
+		write(0x0100 + registers["SP"], (pc >> 8) & 0x00FF);
+		registers["SP"]--;
+		write(0x0100 + registers["SP"], pc & 0x00FF);
+		registers["SP"]--;
+
+		// Then Push the status register to the stack
+		SetFlag(B, 0);
+		SetFlag(U, 1);
+		SetFlag(I, 1);
+		write(0x0100 + registers["SP"], status);
+		registers["SP"]--;
+
+		// Read new program counter location from fixed address
+		addr_abs = 0xFFFE;
+		uint16_t lo = read(addr_abs + 0);
+		uint16_t hi = read(addr_abs + 1);
+		pc = (hi << 8) | lo;
+
+		// IRQs take time
+		cyclesRemaining = 7;
+	}
 }
 
 void MOS6502::nmi() {
-    // TODO: Handle non-maskable interrupts
+    // Almost identical to interrupts except can't be ignored and reads pc from 0xFFFA
+    write(0x0100 + registers["SP"], (pc >> 8) & 0x00FF);
+	registers["SP"]--;
+	write(0x0100 + registers["SP"], pc & 0x00FF);
+	registers["SP"]--;
+
+	SetFlag(B, 0);
+	SetFlag(U, 1);
+	SetFlag(I, 1);
+	write(0x0100 + registers["SP"], status);
+	registers["SP"]--;
+
+	addr_abs = 0xFFFA;
+	uint16_t lo = read(addr_abs + 0);
+	uint16_t hi = read(addr_abs + 1);
+	pc = (hi << 8) | lo;
+
+	cyclesRemaining = 8;
 }
 
 uint8_t MOS6502::fetch() {
