@@ -135,16 +135,125 @@ uint8_t MOS6502::ASL() {
     return 0u;
 }
 
-uint8_t MOS6502::BCC() {return 0x0;}
-uint8_t MOS6502::BCS() {return 0x0;}
-uint8_t MOS6502::BEQ() {return 0x0;}
-uint8_t MOS6502::BIT() {return 0x0;}
-uint8_t MOS6502::BMI() {return 0x0;}
-uint8_t MOS6502::BNE() {return 0x0;}
-uint8_t MOS6502::BPL() {return 0x0;}
-uint8_t MOS6502::BRK() {return 0x0;}
-uint8_t MOS6502::BVC() {return 0x0;}
-uint8_t MOS6502::BVS() {return 0x0;}
+uint8_t MOS6502::BCC() {
+    if (!getFlag(C)) {
+        pc = addr_abs;
+
+        // Can take an additional cycle
+        return pageBoundaryCrossed ? 2u : 1u;
+    }
+
+    return 0u;
+}
+
+uint8_t MOS6502::BCS() {
+    if (!getFlag(C)) {
+        pc = addr_abs;
+
+        // Can take an additional cycle
+        return pageBoundaryCrossed ? 2u : 1u;
+    }
+
+    return 0u;
+}
+
+uint8_t MOS6502::BEQ() {
+    if (getFlag(Z)) {
+        pc = addr_abs;
+
+        // Can take an additional cycle
+        return pageBoundaryCrossed ? 2u : 1u;
+    }
+    
+    return 0u;
+}
+uint8_t MOS6502::BIT() {
+    // Fetch neccessary data
+    fetch();
+    
+    uint16_t res = registers["A"] & fetched;
+
+    // Set flags
+    setFlag(Z, (res & 0x00FF) == 0x00);
+    setFlag(N, fetched & N);
+    setFlag(O, fetched & O);
+
+    return 0u;
+}
+
+uint8_t MOS6502::BMI() {
+    if (getFlag(N)) {
+        pc = addr_abs;
+
+        // Can take an additional cycle
+        return pageBoundaryCrossed ? 2u : 1u;
+    }
+
+    return 0u;
+}
+
+uint8_t MOS6502::BNE() {
+    if (!getFlag(Z)) {
+        pc = addr_abs;
+
+        // Can take an additional cycle
+        return pageBoundaryCrossed ? 2u : 1u;
+    }
+    
+    return 0u;
+}
+
+uint8_t MOS6502::BPL() {
+    if (!getFlag(N)) {
+        pc = addr_abs;
+
+        // Can take an additional cycle
+        return pageBoundaryCrossed ? 2u : 1u;
+    }
+    
+    return 0u;
+}
+
+uint8_t MOS6502::BRK() {
+    pc++;
+
+    setFlag(I, 1);
+    writeMem(0x0100 + registers["SP"], (pc >> 8) & 0x00FF);
+    registers["SP"]--;
+    writeMem(0x0100 + registers["SP"], pc & 0x00FF);
+    registers["SP"]--;
+
+    setFlag(B, 1);
+    writeMem(0x0100 + registers["SP"], registers["P"]);
+    registers["SP"]--;
+    setFlag(B, 0);
+
+    pc = (uint16_t) readMem(0xFFFE) | ((uint16_t) readMem(0xFFFF) << 8);
+
+    return 0u;
+}
+
+uint8_t MOS6502::BVC() {
+    if (!getFlag(O)) {
+        pc = addr_abs;
+
+        // Can take an additional cycle
+        return pageBoundaryCrossed ? 2u : 1u;
+    }
+    
+    return 0u;
+}
+
+uint8_t MOS6502::BVS() {
+    if (getFlag(O)) {
+        pc = addr_abs;
+
+        // Can take an additional cycle
+        return pageBoundaryCrossed ? 2u : 1u;
+    }
+    
+    return 0u;
+}
 
 uint8_t MOS6502::CLC() {
     setFlag(C, 0);
@@ -293,8 +402,25 @@ uint8_t MOS6502::INY() {
     return 0u;
 }
 
-uint8_t MOS6502::JMP() {return 0x0;}
-uint8_t MOS6502::JSR() {return 0x0;}
+uint8_t MOS6502::JMP() {
+    // Set next to the address we're jumping to
+    pc = addr_abs;
+
+    return 0u;
+}
+
+uint8_t MOS6502::JSR() {
+    // Push pc to stack
+    pc--;
+    writeMem(0x0100 + registers["SP"], (pc >> 8) & 0x00FF);
+    registers["SP"]--;
+    writeMem(0x0100 + registers["SP"], pc & 0xFF00);
+    registers["SP"]--;
+
+    pc = addr_abs;
+
+    return 0u;
+}
 
 uint8_t MOS6502::LDA() {
     // Fetch neccessary data
@@ -482,8 +608,31 @@ uint8_t MOS6502::ROR() {
     return 0u;
 }
 
-uint8_t MOS6502::RTI() {return 0x0;}
-uint8_t MOS6502::RTS() {return 0x0;}
+uint8_t MOS6502::RTI() {
+    // Pop status from stack
+    registers["SP"]++;
+    registers["P"] = readMem(0x0100 + registers["SP"]);
+    registers["P"] &= ~B;
+    registers["P"] &= ~U;
+
+    // Pop return address from stack (and shift + or to compose it)
+    registers["SP"]++;
+    pc = (uint16_t) readMem(0x0100 + registers["SP"]);
+    registers["SP"]++;
+    pc |= (uint16_t) readMem(0x0100 + registers["SP"]) << 8;
+
+    return 0u;
+}
+
+uint8_t MOS6502::RTS() {
+    // Pop return address from stack (and shift + or to compose it)
+    registers["SP"]++;
+    pc = (uint16_t) readMem(0x0100 + registers["SP"]);
+    registers["SP"]++;
+    pc |= (uint16_t) readMem(0x0100 + registers["SP"]) << 8;
+
+    return 0u;
+}
 
 uint8_t MOS6502::SBC() {
     // Fetch neccessary data
@@ -493,7 +642,7 @@ uint8_t MOS6502::SBC() {
     uint16_t complement = ((uint16_t) fetched) ^ 0x00FF;
     uint16_t res = (uint16_t) registers["A"] + complement + (uint16_t) getFlag(C);
     setFlag(C, res & 0xFF00);
-    setFlag(Z ((res & 0x00FF) == 0));
+    setFlag(Z, ((res & 0x00FF) == 0));
     setFlag(O, (res ^ (uint16_t) registers["A"]) & (res ^ complement) & 0x0080);
     setFlag(N, res & 0x0080);
     registers["A"] = res & 0x00FF;
@@ -604,15 +753,133 @@ uint8_t MOS6502::TYA() {
 }
 
 // Addressing modes
-uint8_t MOS6502::IMP() {return 0x0;}	
-uint8_t MOS6502::IMM() {return 0x0;}
-uint8_t MOS6502::ZP0() {return 0x0;}	
-uint8_t MOS6502::ZPX() {return 0x0;}
-uint8_t MOS6502::ZPY() {return 0x0;}	
-uint8_t MOS6502::REL() {return 0x0;}
-uint8_t MOS6502::ABS() {return 0x0;}	
-uint8_t MOS6502::ABX() {return 0x0;}
-uint8_t MOS6502::ABY() {return 0x0;}	
-uint8_t MOS6502::IND() {return 0x0;}
-uint8_t MOS6502::IZX() {return 0x0;} 
-uint8_t MOS6502::IZY() {return 0x0;}
+uint8_t MOS6502::IMP() {
+    fetched = registers["A"];
+
+    return 0u;
+}
+
+uint8_t MOS6502::IMM() {
+    addr_abs = pc;
+    pc++;
+
+    return 0u;
+}
+
+uint8_t MOS6502::ZP0() {
+    addr_abs = readMem(pc);
+    pc++;
+    addr_abs &= 0x00FF;
+
+    return 0u;
+}
+
+uint8_t MOS6502::ZPX() {
+    addr_abs = readMem(pc) + registers["X"];
+    pc++;
+    addr_abs &= 0x00FF;
+
+    return 0u;
+}
+
+uint8_t MOS6502::ZPY() {
+    addr_abs = readMem(pc) + registers["Y"];
+    pc++;
+    addr_abs &= 0x00FF;
+
+    return 0u;
+}
+
+uint8_t MOS6502::REL() {
+    addr_abs = readMem(pc);
+    pc++;
+    if (addr_abs & 0x80)
+        addr_abs |= 0xFF00;
+
+    return 0u;
+}
+
+uint8_t MOS6502::ABS() {
+    uint16_t lo = readMem(pc);
+    pc++;
+    uint16_t hi = readMem(pc);
+    pc++;
+
+    addr_abs = (hi << 8) | lo;
+
+    return 0u;
+}
+
+uint8_t MOS6502::ABX() {
+    uint16_t lo = readMem(pc);
+    pc++;
+    uint16_t hi = readMem(pc);
+    pc++;
+
+    addr_abs = (hi << 8) | lo;
+    addr_abs += registers["X"];
+
+    if ((addr_abs & 0xFF00) != (hi << 8))
+        return 1u;
+
+    return 0u;
+}
+
+uint8_t MOS6502::ABY() {
+    uint16_t lo = readMem(pc);
+    pc++;
+    uint16_t hi = readMem(pc);
+    pc++;
+    
+    addr_abs = (hi << 8) | lo;
+    addr_abs += registers["Y"];
+
+    if ((addr_abs & 0xFF00) != (hi << 8))
+        return 1u;
+
+    return 0u;
+}
+
+uint8_t MOS6502::IND() {
+    uint16_t ptr_lo = readMem(pc);
+    pc++;
+    uint16_t ptr_hi = readMem(pc);
+    pc++;
+
+    uint16_t ptr = (ptr_hi << 8) | ptr_lo;
+
+    if (ptr_lo == 0x00FF) // Simulate page boundary hardware bug
+        addr_abs = (readMem(ptr & 0xFF00) << 8) | readMem(ptr + 0);
+    else
+        addr_abs = (readMem(ptr + 1) << 8) | readMem(ptr + 0);
+
+    return 0u;
+}
+
+uint8_t MOS6502::IZX() {
+    uint16_t t = readMem(pc);
+    pc++;
+    
+    uint16_t lo = readMem((uint16_t)(t + (uint16_t)registers["X"]) & 0x00FF);
+    uint16_t hi = readMem((uint16_t)(t + (uint16_t)registers["Y"] + 1) & 0x00FF);
+    
+    addr_abs = (hi << 8) | lo;
+
+    return 0u;
+}
+
+uint8_t MOS6502::IZY() {
+    uint16_t t = readMem(pc);
+    pc++;
+
+    uint16_t lo = readMem(t & 0x00FF);
+    uint16_t hi = readMem((t + 1) & 0x00FF);
+
+    addr_abs = (hi << 8) | lo;
+    addr_abs += registers["Y"];
+
+    if ((addr_abs & 0xFF00) != (hi << 8))
+        return 1u;
+
+    return 0u;
+}
