@@ -36,8 +36,8 @@ void MOS6502::cycle() {
 void MOS6502::reset() {
     // Get address to set program counter to
 	addr_abs = 0xFFFC;
-	uint16_t lo = read(addr_abs + 0);
-	uint16_t hi = read(addr_abs + 1);
+	uint16_t lo = readMem(addr_abs + 0);
+	uint16_t hi = readMem(addr_abs + 1);
     pc = (hi << 8) | lo;
 
     // Reset registers
@@ -58,26 +58,26 @@ void MOS6502::reset() {
 
 void MOS6502::irq() {
     // If interrupts are allowed
-	if (GetFlag(I) == 0)
+	if (getFlag(I) == 0)
 	{
 		// Push the program counter to the stack. It's 16-bits dont
 		// forget so that takes two pushes
-		write(0x0100 + registers["SP"], (pc >> 8) & 0x00FF);
+		writeMem(0x0100 + registers["SP"], (pc >> 8) & 0x00FF);
 		registers["SP"]--;
-		write(0x0100 + registers["SP"], pc & 0x00FF);
+		writeMem(0x0100 + registers["SP"], pc & 0x00FF);
 		registers["SP"]--;
 
 		// Then Push the status register to the stack
-		SetFlag(B, 0);
-		SetFlag(U, 1);
-		SetFlag(I, 1);
-		write(0x0100 + registers["SP"], status);
+		setFlag(B, 0);
+		setFlag(U, 1);
+		setFlag(I, 1);
+		writeMem(0x0100 + registers["SP"], registers["P"]);
 		registers["SP"]--;
 
 		// Read new program counter location from fixed address
 		addr_abs = 0xFFFE;
-		uint16_t lo = read(addr_abs + 0);
-		uint16_t hi = read(addr_abs + 1);
+		uint16_t lo = readMem(addr_abs + 0);
+		uint16_t hi = readMem(addr_abs + 1);
 		pc = (hi << 8) | lo;
 
 		// IRQs take time
@@ -87,20 +87,20 @@ void MOS6502::irq() {
 
 void MOS6502::nmi() {
     // Almost identical to interrupts except can't be ignored and reads pc from 0xFFFA
-    write(0x0100 + registers["SP"], (pc >> 8) & 0x00FF);
+    writeMem(0x0100 + registers["SP"], (pc >> 8) & 0x00FF);
 	registers["SP"]--;
-	write(0x0100 + registers["SP"], pc & 0x00FF);
+	writeMem(0x0100 + registers["SP"], pc & 0x00FF);
 	registers["SP"]--;
 
-	SetFlag(B, 0);
-	SetFlag(U, 1);
-	SetFlag(I, 1);
-	write(0x0100 + registers["SP"], status);
+	setFlag(B, 0);
+	setFlag(U, 1);
+	setFlag(I, 1);
+	writeMem(0x0100 + registers["SP"], registers["P"]);
 	registers["SP"]--;
 
 	addr_abs = 0xFFFA;
-	uint16_t lo = read(addr_abs + 0);
-	uint16_t hi = read(addr_abs + 1);
+	uint16_t lo = readMem(addr_abs + 0);
+	uint16_t hi = readMem(addr_abs + 1);
 	pc = (hi << 8) | lo;
 
 	cyclesRemaining = 8;

@@ -9,7 +9,8 @@ NES::NES(const char* romFileName) {
     cpu = &tempCPU;
    
     // Read rom file
-    ifstream romFile(romFileName, std::ios::binary);
+    ifstream romFile;
+    romFile.open(romFileName, std::ifstream::binary);
     if (romFile.is_open()) {
         Cartridge cartridge;
 
