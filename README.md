@@ -5,7 +5,7 @@ This is the first emulator I've written and has many imperfections. There are se
 
 ## Features
 - [x] Instruction fetching/decoding/execution framework
-- [ ] Official instruction set support
+- [x] Official instruction set support
 - [ ] Full address mode support
 - [ ] Unofficial instructions support
 - [ ] PPU Rendering
