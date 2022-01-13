@@ -29,3 +29,5 @@ make
 - https://wiki.nesdev.org/
 - https://wiki.nesdev.org/w/index.php/Emulator_tests
 - http://users.telenet.be/kim1-6502/6502/proman.html#221
+- https://yizhang82.dev/nes-emu-cpu
+- https://austinmorlan.com/posts/nes_rendering_overview/
