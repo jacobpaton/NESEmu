@@ -1,5 +1,5 @@
 # NESEmu
-Emulator for the Nintendo Entertainment System (NES) written by Jacob Paton.
+Emulator for the Nintendo Entertainment System (NES).
 
 This is the first emulator I've written and has many imperfections. There are several things on my todo list that I would like to tackle with this project. As I continue working on it, I'll update this README with the project status.
 
